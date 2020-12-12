@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:uuid/uuid.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:new_project/requests/googleMapsRequests.dart';
 
 void main() => runApp(MyApp());
 
@@ -38,14 +40,24 @@ class Map extends StatefulWidget {
 
 class _MapState extends State<Map> {
   GoogleMapController _googleMapController;
-  static const _initialPosition = LatLng(12.97, 77.58);
+  static LatLng _initialPosition;
   LatLng _finalPosition = _initialPosition;
   final List<Marker> _markersList = [];
-  TextEditingController locationController=TextEditingController();
-  TextEditingController destinationController=TextEditingController();
+  TextEditingController _locationController=TextEditingController();
+  TextEditingController _destinationController=TextEditingController();
+  GoogleMapsServices _googleMapsServices=GoogleMapsServices();
+  final Set<Polyline> _polylines={};
+
+  @override
+  void initState() {
+    super.initState();
+    _getUserLocation();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return _initialPosition==null? Container():
+    Stack(
       children: <Widget>[
         GoogleMap(
           initialCameraPosition:
@@ -60,14 +72,14 @@ class _MapState extends State<Map> {
           child: Column(
             children: <Widget>[
               Padding(
-                padding: const EdgeInsets.only(left: 10.0, right: 10.0),
+                padding: const EdgeInsets.only(left: 10.0, right: 10.0,top: 10.0),
                 child: Card(
                   elevation: 3.0,
                   child: Padding(
                     padding: const EdgeInsets.only(
                         left: 10.0, right: 10.0, top: 8.0, bottom: 8.0),
                     child: TextField(
-                      controller: locationController,
+                      controller: _locationController,
                       cursorColor: Colors.blue.shade900,
                       decoration: InputDecoration(
                           hintText: "Pick up",
@@ -89,7 +101,7 @@ class _MapState extends State<Map> {
                     padding: const EdgeInsets.only(
                         left: 10.0, right: 10.0, top: 8.0, bottom: 8.0),
                     child: TextField(
-                      controller: destinationController,
+                      controller: _destinationController,
                       cursorColor: Colors.blue.shade900,
                       decoration: InputDecoration(
                           hintText: "Destination",
@@ -172,5 +184,14 @@ class _MapState extends State<Map> {
     print(lList.toString());
 
     return lList;
+  }
+
+  void _getUserLocation() async  {
+     Position position=await Geolocator().getCurrentPosition(desiredAccuracy:LocationAccuracy.best);
+     List<Placemark> placemark=await Geolocator().placemarkFromCoordinates(position.latitude, position.longitude);
+     setState(() {
+       _initialPosition=LatLng(position.latitude, position.longitude);
+       _locationController.text=placemark[0].name;
+     });
   }
 }
